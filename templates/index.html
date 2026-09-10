@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Network Traffic Analyzer
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+
+    <nav class="navbar">
+
+        <div class="logo">
+            Network Traffic Analyzer
+        </div>
+
+        <div class="status">
+
+            <span class="status-dot"></span>
+
+            <span id="system-status">
+                System Ready
+            </span>
+
+        </div>
+
+    </nav>
+
+
+
+    <main class="container">
+
+
+        <section class="hero">
+
+            <div class="tag">
+                CYBERSECURITY TOOL
+            </div>
+
+
+            <h1>
+                Network Traffic
+                <span>Analyzer</span>
+            </h1>
+
+
+            <p class="description">
+
+                Analyze network traffic, inspect packets,
+                and understand network activity through
+                a simple cybersecurity dashboard.
+
+            </p>
+
+
+            <div class="action-area">
+
+                <button
+                    id="analyze-button"
+                    class="analyze-button"
+                >
+                    Start Analysis
+                </button>
+
+
+                <input
+                    type="file"
+                    id="pcap-file"
+                    accept=".pcap,.pcapng"
+                >
+
+
+                <button
+                    id="upload-button"
+                    class="analyze-button"
+                >
+                    Upload PCAP
+                </button>
+
+            </div>
+
+
+            <p id="upload-status"></p>
+
+        </section>
+
+
+
+        <section class="dashboard">
+
+
+            <div class="card">
+
+                <div class="card-title">
+                    PACKETS
+                </div>
+
+                <h2 id="packet-count">
+                    0
+                </h2>
+
+                <div class="card-info">
+                    Analyzed packets
+                </div>
+
+            </div>
+
+
+
+            <div class="card">
+
+                <div class="card-title">
+                    IP ADDRESSES
+                </div>
+
+                <h2 id="ip-count">
+                    0
+                </h2>
+
+                <div class="card-info">
+                    Unique addresses
+                </div>
+
+            </div>
+
+
+
+            <div class="card">
+
+                <div class="card-title">
+                    PORTS
+                </div>
+
+                <h2 id="port-count">
+                    0
+                </h2>
+
+                <div class="card-info">
+                    Detected ports
+                </div>
+
+            </div>
+
+
+
+            <div class="card">
+
+                <div class="card-title">
+                    ALERTS
+                </div>
+
+                <h2 id="alert-count">
+                    0
+                </h2>
+
+                <div class="card-info">
+                    Suspicious activity
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <section class="traffic-section">
+
+
+            <div class="section-header">
+
+                <h2>
+                    Captured Packets
+                </h2>
+
+                <div
+                    id="traffic-status"
+                    class="waiting"
+                >
+                    Waiting for analysis...
+                </div>
+
+            </div>
+
+
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Source IP
+                            </th>
+
+                            <th>
+                                Destination IP
+                            </th>
+
+                            <th>
+                                Protocol
+                            </th>
+
+                            <th>
+                                Source Port
+                            </th>
+
+                            <th>
+                                Destination Port
+                            </th>
+
+                            <th>
+                                Security
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="traffic-table">
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="empty-message"
+                            >
+
+                                Upload a PCAP file or click
+                                "Start Analysis".
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+
+
+    <footer>
+
+        Network Traffic Analyzer
+        • Built with Python & Flask
+
+    </footer>
+
+
+
+    <script>
+
+
+        const analyzeButton =
+            document.getElementById(
+                "analyze-button"
+            );
+
+
+        const uploadButton =
+            document.getElementById(
+                "upload-button"
+            );
+
+
+        const pcapFile =
+            document.getElementById(
+                "pcap-file"
+            );
+
+
+        const uploadStatus =
+            document.getElementById(
+                "upload-status"
+            );
+
+
+        const trafficTable =
+            document.getElementById(
+                "traffic-table"
+            );
+
+
+        const packetCount =
+            document.getElementById(
+                "packet-count"
+            );
+
+
+        const ipCount =
+            document.getElementById(
+                "ip-count"
+            );
+
+
+        const portCount =
+            document.getElementById(
+                "port-count"
+            );
+
+
+        const alertCount =
+            document.getElementById(
+                "alert-count"
+            );
+
+
+        const systemStatus =
+            document.getElementById(
+                "system-status"
+            );
+
+
+        const trafficStatus =
+            document.getElementById(
+                "traffic-status"
+            );
+
+
+
+        function displayResults(data) {
+
+            const packets =
+                data.packets || [];
+
+
+            packetCount.textContent =
+                data.total || 0;
+
+
+            alertCount.textContent =
+                data.alerts || 0;
+
+
+
+            const uniqueIPs =
+                new Set();
+
+
+            const uniquePorts =
+                new Set();
+
+
+
+            packets.forEach(
+                function (packet) {
+
+
+                    uniqueIPs.add(
+                        packet.source_ip
+                    );
+
+
+                    uniqueIPs.add(
+                        packet.destination_ip
+                    );
+
+
+                    if (
+                        packet.source_port !== "-"
+                    ) {
+
+                        uniquePorts.add(
+                            packet.source_port
+                        );
+
+                    }
+
+
+                    if (
+                        packet.destination_port !== "-"
+                    ) {
+
+                        uniquePorts.add(
+                            packet.destination_port
+                        );
+
+                    }
+
+                }
+            );
+
+
+
+            ipCount.textContent =
+                uniqueIPs.size;
+
+
+            portCount.textContent =
+                uniquePorts.size;
+
+
+
+            if (packets.length === 0) {
+
+                trafficTable.innerHTML = `
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="empty-message"
+                        >
+
+                            No IP traffic was detected.
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+                return;
+
+            }
+
+
+
+            trafficTable.innerHTML = "";
+
+
+
+            packets.forEach(
+                function (packet) {
+
+
+                    const row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    const sourceIP =
+                        document.createElement(
+                            "td"
+                        );
+
+                    sourceIP.textContent =
+                        packet.source_ip;
+
+
+                    const destinationIP =
+                        document.createElement(
+                            "td"
+                        );
+
+                    destinationIP.textContent =
+                        packet.destination_ip;
+
+
+                    const protocol =
+                        document.createElement(
+                            "td"
+                        );
+
+                    protocol.textContent =
+                        packet.protocol;
+
+
+                    const sourcePort =
+                        document.createElement(
+                            "td"
+                        );
+
+                    sourcePort.textContent =
+                        packet.source_port;
+
+
+                    const destinationPort =
+                        document.createElement(
+                            "td"
+                        );
+
+                    destinationPort.textContent =
+                        packet.destination_port;
+
+
+                    const security =
+                        document.createElement(
+                            "td"
+                        );
+
+
+
+                    if (packet.alert) {
+
+
+                        security.textContent =
+                            "⚠ Suspicious";
+
+
+                        security.className =
+                            "alert-cell";
+
+
+                        security.title =
+                            packet.alert_message;
+
+
+                    } else {
+
+
+                        security.textContent =
+                            "Normal";
+
+
+                        security.className =
+                            "safe-cell";
+
+                    }
+
+
+
+                    row.appendChild(
+                        sourceIP
+                    );
+
+
+                    row.appendChild(
+                        destinationIP
+                    );
+
+
+                    row.appendChild(
+                        protocol
+                    );
+
+
+                    row.appendChild(
+                        sourcePort
+                    );
+
+
+                    row.appendChild(
+                        destinationPort
+                    );
+
+
+                    row.appendChild(
+                        security
+                    );
+
+
+                    trafficTable.appendChild(
+                        row
+                    );
+
+                }
+            );
+
+        }
+
+
+
+        analyzeButton.addEventListener(
+            "click",
+            async function () {
+
+
+                analyzeButton.disabled =
+                    true;
+
+
+                uploadButton.disabled =
+                    true;
+
+
+                analyzeButton.textContent =
+                    "Analyzing...";
+
+
+                systemStatus.textContent =
+                    "Analyzing traffic";
+
+
+                trafficStatus.textContent =
+                    "Inspecting packets...";
+
+
+                trafficTable.innerHTML = `
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="empty-message"
+                        >
+
+                            Analyzing network traffic...
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+
+
+                try {
+
+
+                    const response =
+                        await fetch(
+                            "/analyze"
+                        );
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            "Server returned an error."
+                        );
+
+                    }
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!data.success) {
+
+                        throw new Error(
+                            data.error ||
+                            "Analysis failed."
+                        );
+
+                    }
+
+
+                    displayResults(data);
+
+
+                    systemStatus.textContent =
+                        "Analysis complete";
+
+
+                    trafficStatus.textContent =
+                        `${data.total} packet(s) analyzed`;
+
+
+                } catch (error) {
+
+
+                    console.error(
+                        "Analysis error:",
+                        error
+                    );
+
+
+                    trafficTable.innerHTML = `
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="empty-message"
+                            >
+
+                                Analysis failed:
+                                ${error.message}
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+
+                    systemStatus.textContent =
+                        "Analysis failed";
+
+
+                    trafficStatus.textContent =
+                        "Unable to analyze traffic";
+
+                }
+
+
+
+                analyzeButton.disabled =
+                    false;
+
+
+                uploadButton.disabled =
+                    false;
+
+
+                analyzeButton.textContent =
+                    "Start Analysis";
+
+            }
+        );
+
+
+
+        uploadButton.addEventListener(
+            "click",
+            async function () {
+
+
+                if (!pcapFile.files.length) {
+
+                    uploadStatus.textContent =
+                        "Please select a PCAP file first.";
+
+                    return;
+
+                }
+
+
+                const file =
+                    pcapFile.files[0];
+
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "file",
+                    file
+                );
+
+
+                uploadButton.disabled =
+                    true;
+
+
+                analyzeButton.disabled =
+                    true;
+
+
+                uploadButton.textContent =
+                    "Analyzing...";
+
+
+                uploadStatus.textContent =
+                    "Uploading and analyzing PCAP file...";
+
+
+                systemStatus.textContent =
+                    "Analyzing PCAP";
+
+
+                trafficStatus.textContent =
+                    "Inspecting packets...";
+
+
+                trafficTable.innerHTML = `
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="empty-message"
+                        >
+
+                            Analyzing uploaded PCAP file...
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+
+
+                try {
+
+
+                    const response =
+                        await fetch(
+                            "/upload",
+                            {
+                                method: "POST",
+                                body: formData
+                            }
+                        );
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            "Server returned an error."
+                        );
+
+                    }
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!data.success) {
+
+                        throw new Error(
+                            data.error ||
+                            "PCAP analysis failed."
+                        );
+
+                    }
+
+
+                    displayResults(data);
+
+
+                    uploadStatus.textContent =
+                        `Analyzed: ${data.filename}`;
+
+
+                    systemStatus.textContent =
+                        "PCAP analysis complete";
+
+
+                    trafficStatus.textContent =
+                        `${data.total} packet(s) analyzed`;
+
+
+                } catch (error) {
+
+
+                    console.error(
+                        "PCAP error:",
+                        error
+                    );
+
+
+                    uploadStatus.textContent =
+                        `Analysis failed: ${error.message}`;
+
+
+                    systemStatus.textContent =
+                        "PCAP analysis failed";
+
+
+                    trafficStatus.textContent =
+                        "Unable to analyze PCAP";
+
+
+                    trafficTable.innerHTML = `
+
+                        <tr>
+
+                            <td
+                                colspan="6"
+                                class="empty-message"
+                            >
+
+                                PCAP analysis failed:
+                                ${error.message}
+
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+
+
+
+                uploadButton.disabled =
+                    false;
+
+
+                analyzeButton.disabled =
+                    false;
+
+
+                uploadButton.textContent =
+                    "Upload PCAP";
+
+            }
+        );
+
+
+    </script>
+
+
+</body>
+
+</html>
